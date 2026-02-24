@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Tracker - Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <nav class="sidebar">
+        <div class="brand">
+            <i class="fas fa-graduation-cap"></i> EduTrack
+        </div>
+        <ul class="nav-links">
+            <li><a href="index.html" class="active"><i class="fas fa-home"></i> Dashboard</a></li>
+            <li><a href="students.html"><i class="fas fa-user-graduate"></i> Students</a></li>
+            <li><a href="academics.html"><i class="fas fa-book"></i> Academics</a></li>
+            <li><a href="finance.html"><i class="fas fa-coins"></i> Finance</a></li>
+            <li><a href="reports.html"><i class="fas fa-print"></i> Reports</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <header>
+            <h1>Dashboard</h1>
+            <div class="user-profile">
+                <span>Admin</span>
+                <i class="fas fa-user-circle fa-lg"></i>
+            </div>
+        </header>
+
+        <div class="card-grid">
+            <div class="card">
+                <h3>Total Students</h3>
+                <div class="value" id="total-students">0</div>
+            </div>
+            <div class="card">
+                <h3>Total Revenue</h3>
+                <div class="value" id="total-revenue">$0.00</div>
+            </div>
+            <div class="card">
+                <h3>Average Performance</h3>
+                <div class="value" id="avg-performance">0%</div>
+            </div>
+        </div>
+
+        <div class="recent-activity">
+            <h2>Recent Enrollments</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Grade</th>
+                            <th>Date Enrolled</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recent-students-body">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Load Dashboard Data
+            const students = Database.getStudents();
+            const transactions = Database.getTransactions();
+
+            // 1. Total Students
+            document.getElementById('total-students').textContent = students.length;
+
+            // 2. Total Revenue
+            const totalRevenue = transactions.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+            document.getElementById('total-revenue').textContent = formatCurrency(totalRevenue);
+
+            // 3. Recent Students
+            const tbody = document.getElementById('recent-students-body');
+            const recentStudents = students.slice(0, 5); // Get first 5
+
+            if (recentStudents.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3">No students enrolled yet.</td></tr>';
+            } else {
+                recentStudents.forEach(s => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${s.name}</td>
+                        <td>${s.grade}</td>
+                        <td>${s.enrolledDate}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        });
+    </script>
+</body>
+
+</html>

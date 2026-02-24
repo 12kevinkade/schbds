@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Tracker - Reports</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Report Specific Styles */
+        .report-card {
+            background: white;
+            padding: 2rem;
+            border: 1px solid #ddd;
+            margin-top: 2rem;
+            display: none;
+            /* Hidden by default */
+        }
+
+        .report-header {
+            text-align: center;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .report-header h1 {
+            margin-bottom: 0.5rem;
+        }
+
+        .student-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .info-group label {
+            font-weight: bold;
+            color: var(--text-light);
+        }
+
+        .grade-summary {
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+
+            .report-card,
+            .report-card * {
+                visibility: visible;
+            }
+
+            .report-card {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                border: none;
+                display: block !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="sidebar">
+        <div class="brand">
+            <i class="fas fa-graduation-cap"></i> EduTrack
+        </div>
+        <ul class="nav-links">
+            <li><a href="index.html"><i class="fas fa-home"></i> Dashboard</a></li>
+            <li><a href="students.html"><i class="fas fa-user-graduate"></i> Students</a></li>
+            <li><a href="academics.html"><i class="fas fa-book"></i> Academics</a></li>
+            <li><a href="finance.html"><i class="fas fa-coins"></i> Finance</a></li>
+            <li><a href="reports.html" class="active"><i class="fas fa-print"></i> Reports</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <header class="no-print">
+            <h1>Student Reports</h1>
+            <button class="btn btn-primary" onclick="window.print()">
+                <i class="fas fa-print"></i> Print Report
+            </button>
+        </header>
+
+        <div class="card no-print">
+            <div class="form-group">
+                <label>Select Student to Generate Report</label>
+                <select id="report-student" class="form-control" onchange="generateReport()">
+                    <option value="">Select Student</option>
+                    <!-- Populated by JS -->
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Select Term</label>
+                <select id="report-term" class="form-control" onchange="generateReport()">
+                    <option value="Term 1">Term 1</option>
+                    <option value="Term 2">Term 2</option>
+                    <option value="Term 3">Term 3</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="report-card" class="report-card">
+            <div class="report-header">
+                <h1>EduTrack International School</h1>
+                <p>Official Student Report Card</p>
+            </div>
+
+            <div class="student-info">
+                <div class="info-group">
+                    <label>Student Name:</label>
+                    <div id="r-name">John Doe</div>
+                </div>
+                <div class="info-group">
+                    <label>Student ID:</label>
+                    <div id="r-id">#1234</div>
+                </div>
+                <div class="info-group">
+                    <label>Grade Level:</label>
+                    <div id="r-grade">Grade 5</div>
+                </div>
+                <div class="info-group">
+                    <label>Term:</label>
+                    <div id="r-term">Term 1</div>
+                </div>
+            </div>
+
+            <table style="width: 100%; border: 1px solid #ddd;">
+                <thead>
+                    <tr style="background: #f9f9f9;">
+                        <th style="border: 1px solid #ddd;">Subject</th>
+                        <th style="border: 1px solid #ddd;">Score</th>
+                        <th style="border: 1px solid #ddd;">Grade</th>
+                        <th style="border: 1px solid #ddd;">Remarks</th>
+                    </tr>
+                </thead>
+                <tbody id="r-grades-body">
+                    <!-- Populated -->
+                </tbody>
+            </table>
+
+            <div class="grade-summary">
+                <div>Average Score: <span id="r-average">0</span></div>
+                <div>GPA: <span id="r-gpa">0.0</span></div>
+            </div>
+
+            <div style="margin-top: 4rem; display: flex; justify-content: space-between;">
+                <div style="text-align: center;">
+                    <div style="border-bottom: 1px solid #000; width: 200px; margin-bottom: 0.5rem;"></div>
+                    <label>Class Teacher Signature</label>
+                </div>
+                <div style="text-align: center;">
+                    <div style="border-bottom: 1px solid #000; width: 200px; margin-bottom: 0.5rem;"></div>
+                    <label>Principal Signature</label>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            populateStudentSelect();
+        });
+
+        function populateStudentSelect() {
+            const students = Database.getStudents();
+            const select = document.getElementById('report-student');
+            students.forEach(s => {
+                const option = document.createElement('option');
+                option.value = s.id;
+                option.textContent = `${s.name} (${s.grade})`;
+                select.appendChild(option);
+            });
+        }
+
+        function calculateLetterGrade(score) {
+            if (score >= 90) return 'A';
+            if (score >= 80) return 'B';
+            if (score >= 70) return 'C';
+            if (score >= 60) return 'D';
+            return 'F';
+        }
+
+        function getRemarks(score) {
+            if (score >= 90) return 'Excellent';
+            if (score >= 80) return 'Very Good';
+            if (score >= 70) return 'Good';
+            if (score >= 60) return 'Satisfactory';
+            return 'Needs Improvement';
+        }
+
+        function generateReport() {
+            const studentId = document.getElementById('report-student').value;
+            const term = document.getElementById('report-term').value;
+            const reportCard = document.getElementById('report-card');
+
+            if (!studentId) {
+                reportCard.style.display = 'none';
+                return;
+            }
+
+            const students = Database.getStudents();
+            const student = students.find(s => s.id === studentId);
+            const grades = Database.getGrades().filter(g => g.studentId === studentId && g.term === term);
+
+            // Populate Info
+            document.getElementById('r-name').textContent = student.name;
+            document.getElementById('r-id').textContent = '#' + student.id.substr(-4);
+            document.getElementById('r-grade').textContent = student.grade;
+            document.getElementById('r-term').textContent = term;
+
+            // Populate Grades
+            const tbody = document.getElementById('r-grades-body');
+            tbody.innerHTML = '';
+
+            let totalScore = 0;
+
+            if (grades.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 2rem;">No grades recorded for this term.</td></tr>';
+            } else {
+                grades.forEach(g => {
+                    totalScore += parseInt(g.score);
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td style="border: 1px solid #ddd;">${g.subject}</td>
+                        <td style="border: 1px solid #ddd;">${g.score}</td>
+                        <td style="border: 1px solid #ddd;">${calculateLetterGrade(g.score)}</td>
+                        <td style="border: 1px solid #ddd;">${getRemarks(g.score)}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            // Calculate Average
+            const average = grades.length > 0 ? (totalScore / grades.length).toFixed(1) : 0;
+            document.getElementById('r-average').textContent = average;
+
+            // Simple GPA (4.0 scale approximation)
+            let gpa = 0;
+            if (average >= 90) gpa = 4.0;
+            else if (average >= 80) gpa = 3.0;
+            else if (average >= 70) gpa = 2.0;
+            else if (average >= 60) gpa = 1.0;
+            document.getElementById('r-gpa').textContent = gpa.toFixed(1);
+
+            reportCard.style.display = 'block';
+        }
+    </script>
+</body>
+
+</html>

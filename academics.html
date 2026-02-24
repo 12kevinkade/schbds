@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Tracker - Academics</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <nav class="sidebar">
+        <div class="brand">
+            <i class="fas fa-graduation-cap"></i> EduTrack
+        </div>
+        <ul class="nav-links">
+            <li><a href="index.html"><i class="fas fa-home"></i> Dashboard</a></li>
+            <li><a href="students.html"><i class="fas fa-user-graduate"></i> Students</a></li>
+            <li><a href="academics.html" class="active"><i class="fas fa-book"></i> Academics</a></li>
+            <li><a href="finance.html"><i class="fas fa-coins"></i> Finance</a></li>
+            <li><a href="reports.html"><i class="fas fa-print"></i> Reports</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <header>
+            <h1>Academic Performance</h1>
+            <button class="btn btn-primary" onclick="openModal()">
+                <i class="fas fa-plus"></i> Record Grade
+            </button>
+        </header>
+
+        <div class="form-group" style="max-width: 300px; margin-bottom: 2rem;">
+            <label>Filter by Student</label>
+            <select id="filter-student" class="form-control" onchange="renderGrades()">
+                <option value="">All Students</option>
+                <!-- Populated by JS -->
+            </select>
+        </div>
+
+        <div class="table-container">
+            <table id="grades-table">
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>Term</th>
+                        <th>Subject</th>
+                        <th>Score</th>
+                        <th>Grade</th>
+                    </tr>
+                </thead>
+                <tbody id="grades-body">
+                    <!-- Populated by JS -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- Grade Modal -->
+    <div id="grade-modal" class="modal">
+        <div class="modal-content">
+            <h2>Record Grade</h2>
+            <form id="grade-form" onsubmit="handleGrade(event)">
+                <div class="form-group">
+                    <label>Student</label>
+                    <select id="grade-student" class="form-control" required>
+                        <!-- Populated by JS -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Term</label>
+                    <select id="grade-term" class="form-control" required>
+                        <option value="Term 1">Term 1</option>
+                        <option value="Term 2">Term 2</option>
+                        <option value="Term 3">Term 3</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Subject</label>
+                    <select id="grade-subject" class="form-control" required>
+                        <option value="Mathematics">Mathematics</option>
+                        <option value="English">English</option>
+                        <option value="Science">Science</option>
+                        <option value="Social Studies">Social Studies</option>
+                        <option value="Art">Art</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Score (0-100)</label>
+                    <input type="number" id="grade-score" class="form-control" min="0" max="100" required>
+                </div>
+                <div class="form-actions"
+                    style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
+                    <button type="button" class="btn" onclick="closeModal()" style="background: #ccc;">Cancel</button>
+                    <button type="submit" class="btn btn-success">Save Grade</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            populateStudentSelects();
+            renderGrades();
+        });
+
+        function populateStudentSelects() {
+            const students = Database.getStudents();
+            const selects = [document.getElementById('grade-student'), document.getElementById('filter-student')];
+
+            selects.forEach(select => {
+                if (!select) return; // Skip if element not found (e.g. filter has default option)
+
+                // Keep default option for filter
+                if (select.id === 'filter-student') {
+                    select.innerHTML = '<option value="">All Students</option>';
+                } else {
+                    select.innerHTML = '<option value="">Select Student</option>';
+                }
+
+                students.forEach(s => {
+                    const option = document.createElement('option');
+                    option.value = s.id;
+                    option.textContent = `${s.name} (${s.grade})`;
+                    select.appendChild(option);
+                });
+            });
+        }
+
+        function calculateLetterGrade(score) {
+            if (score >= 90) return 'A';
+            if (score >= 80) return 'B';
+            if (score >= 70) return 'C';
+            if (score >= 60) return 'D';
+            return 'F';
+        }
+
+        function renderGrades() {
+            const grades = Database.getGrades();
+            const filterId = document.getElementById('filter-student').value;
+            const tbody = document.getElementById('grades-body');
+            tbody.innerHTML = '';
+
+            let displayGrades = grades;
+            if (filterId) {
+                displayGrades = grades.filter(g => g.studentId === filterId);
+            }
+
+            if (displayGrades.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center">No grades found.</td></tr>';
+                return;
+            }
+
+            displayGrades.forEach(g => {
+                const tr = document.createElement('tr');
+                const letter = calculateLetterGrade(g.score);
+                let color = '#2c3e50';
+                if (letter === 'A') color = 'var(--success-color)';
+                if (letter === 'F') color = 'var(--accent-color)';
+
+                tr.innerHTML = `
+                    <td>${getStudentName(g.studentId)}</td>
+                    <td>${g.term}</td>
+                    <td>${g.subject}</td>
+                    <td>${g.score}</td>
+                    <td style="font-weight: bold; color: ${color}">${letter}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function handleGrade(e) {
+            e.preventDefault();
+            const studentId = document.getElementById('grade-student').value;
+            const term = document.getElementById('grade-term').value;
+            const subject = document.getElementById('grade-subject').value;
+            const score = parseInt(document.getElementById('grade-score').value);
+
+            if (!studentId) {
+                alert('Please select a student');
+                return;
+            }
+
+            Database.saveGrade({
+                studentId,
+                term,
+                subject,
+                score
+            });
+
+            closeModal();
+            document.getElementById('grade-form').reset();
+            renderGrades();
+        }
+
+        // Modal Logic
+        function openModal() {
+            document.getElementById('grade-modal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('grade-modal').classList.remove('active');
+        }
+
+        window.onclick = function (event) {
+            const modal = document.getElementById('grade-modal');
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+    </script>
+</body>
+
+</html>
